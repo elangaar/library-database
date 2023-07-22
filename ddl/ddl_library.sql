@@ -3,3 +3,4 @@
 \echo
 
 \i tables.sql
+\i constraints.sql
