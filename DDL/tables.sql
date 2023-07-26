@@ -1,11 +1,11 @@
 alter table books 
-	drop constraint if exists books_language_fkey;
+	drop constraint if exists books_languages_fkey;
 alter table books
 	drop constraint if exists books_publishers_fkey;
 alter table book_subcategories 
 	drop constraint if exists book_subcategories_book_categories_fkey;
 alter table books_book_subcategories 
-	drop constraint if exists books_book_subcategories_book_categories_fkey;
+	drop constraint if exists books_book_subcategories_book_subcategories_fkey;
 alter table if exists books_book_subcategories
 	drop constraint if exists books_book_subcategories_books_fkey;
 alter table authors 
@@ -25,7 +25,7 @@ alter table orders
 alter table borrowings 
 	drop constraint if exists borrowings_books_fkey;
 alter table borrowings 
-	drop constraint if exists booking_bookings_fkey;
+	drop constraint if exists borrowings_bookings_fkey;
 alter table borrowings
 	drop constraint if exists borrowings_users_fkey;
 alter table borrowings 
@@ -35,7 +35,7 @@ alter table subscriptions
 alter table subscriptions
 	drop constraint if exists subscriptions_payment_plans_fkey;
 alter table payment_plans
-	drop constraint if exists payment_plans_subscription_plans_fkey;
+	drop constraint if exists payment_plans_subscription_types_fkey;
 
 
 drop table if exists books;
