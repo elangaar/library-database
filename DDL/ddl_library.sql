@@ -3,4 +3,5 @@
 \echo
 
 \i tables.sql
+\i views.sql
 \i constraints.sql

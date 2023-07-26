@@ -1,3 +1,12 @@
+drop view if exists books_v;
+drop view if exists authors_v;
+drop view if exists bookings_v;
+drop view if exists orders_v;
+drop view if exists borrowings_v;
+drop view if exists users_v;
+drop view if exists subscriptions_v;
+
+
 alter table books 
 	drop constraint if exists books_languages_fkey;
 alter table books
