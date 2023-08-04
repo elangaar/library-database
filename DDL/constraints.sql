@@ -1,3 +1,5 @@
+-- FOREIGN KEY CONSTRAINTS
+
 alter table books
 	add constraint books_languages_fkey
 	foreign key ("language")
@@ -89,7 +91,7 @@ alter table borrowings
 	on delete cascade;
 
 alter table borrowings 
-	add constraint borrowings_orders_fkey
+	add constraint borrowings_orders_fkey 
 	foreign key (b_order)
 	references orders (order_id)
 	on delete cascade;
@@ -113,5 +115,13 @@ alter table payment_plans
 	on delete cascade;
 
 
+-- CHECK CONSTRAINTS
 
+alter table borrowings
+	add constraint borrowings_source_check
+	check (
+		(book is null and booking is null and b_order is not null)
+		or (book is null and booking is not null and b_order is null)
+		or (book is not null and booking is null and b_order is null)
+	);
 
