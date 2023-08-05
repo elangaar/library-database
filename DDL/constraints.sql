@@ -125,3 +125,13 @@ alter table borrowings
 		or (book is not null and booking is null and b_order is null)
 	);
 
+alter table books
+	add constraint book_status_check
+	check (
+		(is_borrowed is false and is_booked is false and is_ordered is false)
+		or (is_borrowed is false and is_booked is false and is_ordered is true)
+		or (is_borrowed is false and is_booked is true and is_ordered is false)
+		or (is_borrowed is true and is_booked is false and is_ordered is false)
+	);
+	
+

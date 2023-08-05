@@ -71,9 +71,9 @@ create table books (
 	isbn varchar(17) not null,
 	release_date date not null,
 	num_pages smallint not null,
-	is_borrowed bool default false,
-	is_booked bool default false,
-	is_ordered bool default false,
+	is_borrowed bool not null default false,
+	is_booked bool not null default false,
+	is_ordered bool not null default false,
 	language int not null,
 	publisher int not null,
 	primary key (book_id)
