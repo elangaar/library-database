@@ -144,7 +144,7 @@ create table borrowings (
 	rental_date date not null,
 	return_date date,
 	b_user int not null,
-	book int,
+	book int not null,
 	booking int,
 	b_order int,
 	primary key (borrowing_id)

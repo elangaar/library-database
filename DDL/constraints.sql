@@ -119,19 +119,10 @@ alter table payment_plans
 
 alter table borrowings
 	add constraint borrowings_source_check
-	check (
-		(book is null and booking is null and b_order is not null)
-		or (book is null and booking is not null and b_order is null)
-		or (book is not null and booking is null and b_order is null)
-	);
+	check (not (booking is not null and b_order is not null));
 
 alter table books
 	add constraint book_status_check
-	check (
-		(is_borrowed is false and is_booked is false and is_ordered is false)
-		or (is_borrowed is false and is_booked is false and is_ordered is true)
-		or (is_borrowed is false and is_booked is true and is_ordered is false)
-		or (is_borrowed is true and is_booked is false and is_ordered is false)
-	);
-	
+	check (not (is_borrowed is true and is_booked is true and is_ordered is true));
+
 
