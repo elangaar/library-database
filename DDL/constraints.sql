@@ -123,6 +123,8 @@ alter table borrowings
 
 alter table books
 	add constraint book_status_check
-	check (not (is_borrowed is true and is_booked is true and is_ordered is true));
-
-
+	check (
+		not (is_borrowed is true and is_booked is true and is_ordered is true)
+		and not (is_borrowed is true and is_booked is true)
+		and not (is_borrowed is false and is_ordered is true)
+	);

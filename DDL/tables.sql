@@ -153,7 +153,7 @@ create table borrowings (
 create table orders (
 	order_id int generated always as identity,
 	date_from date not null,
-	date_to date not null,
+	date_to date,
 	book int not null,
 	o_user int not null,
 	primary key (order_id)
