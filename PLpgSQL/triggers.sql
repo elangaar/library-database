@@ -39,10 +39,10 @@ begin
 
 	-- when book is borrowed and not ordered
 	if book_status_v.is_borrowed and not book_status_v.is_ordered then
-		select *
---			(b.rental_date + st.rental_period)::date estimated_return_date,
---			b.b_user b_user
---		into borrowing_v
+		select
+			(b.rental_date + st.rental_period)::date estimated_return_date,
+			b.b_user b_user
+		into borrowing_v
 		from borrowings b 
 		inner join users u 
 		on b.b_user = u.user_id 
@@ -54,9 +54,8 @@ begin
 		on pp.subscription_type = st.subscription_type_id
 		where
 			b.return_date is null
-			and b.book = 4;
---			and b.book = new.book;
-		raise notice '%', borrowing_v;
+			and b.book = 4
+			and b.book = new.book;
 		-- when book is borrowed by another reader
 		if new.b_user != borrowing_v.b_user then
 			raise exception 'This book is borrowed by another reader to %', borrowing_v.estimated_return_date;
@@ -86,8 +85,45 @@ begin
 end;
 $$
 
+
 create or replace trigger before_borrowing_book
 	before insert 
 	on borrowings
 	for each row 
 	execute procedure get_borrowing_availability();
+
+
+
+create or replace function after_borrowing_book()
+	returns trigger 
+	language plpgsql
+as
+$$
+declare 
+	book_id_v int;
+begin
+	-- get the borrowed book id
+	select book_id
+	into book_id_v
+	from books
+	where
+		book_id = new.book;
+	raise notice 'book_id: %', book_id_v;
+	
+	-- update book status fields
+	update books 
+	set is_borrowed = true,
+		is_booked = false,
+		is_ordered = false
+	where
+		book_id = book_id_v;
+	
+	return new;
+end;
+$$;
+
+create or replace trigger after_borrowing_book
+	after insert
+	on borrowings
+	for each row 
+	execute procedure after_borrowing_book();
