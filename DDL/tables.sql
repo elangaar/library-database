@@ -141,7 +141,7 @@ create table bookings (
 
 create table borrowings (
 	borrowing_id int generated always as identity,
-	rental_date date not null,
+	rental_date date not null default now(),
 	return_date date,
 	b_user int not null,
 	book int not null,

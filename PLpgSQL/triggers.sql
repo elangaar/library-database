@@ -93,7 +93,6 @@ create or replace trigger before_borrowing_book
 	execute procedure get_borrowing_availability();
 
 
-
 create or replace function after_borrowing_book()
 	returns trigger 
 	language plpgsql
@@ -101,6 +100,7 @@ as
 $$
 declare 
 	book_id_v int;
+	rental_period_v interval;
 begin
 	-- get the borrowed book id
 	select book_id
@@ -108,7 +108,6 @@ begin
 	from books
 	where
 		book_id = new.book;
-	raise notice 'book_id: %', book_id_v;
 	
 	-- update book status fields
 	update books 
@@ -118,6 +117,21 @@ begin
 	where
 		book_id = book_id_v;
 	
+	-- auto completion of the return_date field in the borrowings table depending on the reader's subscription
+	select rental_period 
+	into rental_period_v
+	from subscriptions s 
+	inner join payment_plans pp
+	on s.payment_plan = pp.payment_plan_id 
+	inner join subscription_types st 
+	on pp.subscription_type = st.subscription_type_id 
+	where
+		s.s_user = new.b_user;
+	
+	update borrowings b
+	set return_date = rental_date + rental_period_v
+	where
+		b.borrowing_id = new.borrowing_id;
 	return new;
 end;
 $$;
