@@ -9,7 +9,6 @@ declare
 	booking_v record;
 	order_v record;
 begin
-	
 	-- get a status of a book in the library
 	select is_borrowed,
 		is_booked,
@@ -28,7 +27,6 @@ begin
 			o.book = new.book
 			and o.date_from <= current_date 
 			and o.date_to >= current_date;
-			raise notice '%', book_status_v.is_ordered;
 		-- when book is ordered by another reader
 		if new.b_user != order_v.o_user then
 			raise exception 'This book is ordered by another reader.';
@@ -79,7 +77,7 @@ begin
 			raise exception 'This book is booked by another reader to %.', booking_v.date_to;
 		end if;
 		-- when book is booked by current reader
-		raise exception 'This book is booked by reader to %', booking_v.date_to;
+		raise notice 'This book is booked by reader to %', booking_v.date_to;
 	end if;
 	return new;
 end;
@@ -101,7 +99,17 @@ $$
 declare 
 	book_id_v int;
 	rental_period_v interval;
+	book_status_v record;
+	booking_v int;
 begin
+	-- get a status of a book in the library
+	select is_borrowed,
+		is_booked,
+		is_ordered
+	into book_status_v
+	from books
+	where book_id = new.book;
+
 	-- get the borrowed book id
 	select book_id
 	into book_id_v
@@ -132,6 +140,30 @@ begin
 	set return_date = rental_date + rental_period_v
 	where
 		b.borrowing_id = new.borrowing_id;
+
+	-- checking if the book was booked or ordered and then filling in the fields in the tables accordingly
+	if book_status_v.is_booked then
+		select booking_id
+		into booking_v
+		from bookings b 
+		where 
+			book = new.book
+			and date_from < current_date
+			and date_to > current_date
+			and b_user = new.b_user;
+		
+		update borrowings 
+		set booking = booking_v
+		where
+			borrowing_id = new.borrowing_id;
+		
+		update bookings 
+		set date_to = current_date 
+		where booking_id = booking_v;
+	elsif book_status_v.is_ordered then
+		-- Not implemented yet
+	end if;
+
 	return new;
 end;
 $$;
