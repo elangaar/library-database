@@ -136,6 +136,7 @@ create table bookings (
 	date_to date not null,
 	book int not null,
 	b_user int not null,
+	is_realized bool not null default false,
 	primary key (booking_id)
 );
 
@@ -152,10 +153,11 @@ create table borrowings (
 
 create table orders (
 	order_id int generated always as identity,
-	date_from date not null,
-	date_to date,
+	date_from timestamp not null,
+	date_to timestamp,
 	book int not null,
 	o_user int not null,
+	is_realized bool not null default false,
 	primary key (order_id)
 );
 

@@ -7,6 +7,7 @@ declare
 	book_status_v record;
 	borrowing_v record;
 	booking_v record;
+	first_order_v int;
 	order_v record;
 begin
 	-- get a status of a book in the library
@@ -17,61 +18,34 @@ begin
 	from books
 	where book_id = new.book;
 	
-	-- when the book is ordered
-	if book_status_v.is_ordered then
-		select o_user,
-			date_to
-		into order_v
-		from orders o 
-		where
-			o.book = new.book
-			and o.date_from <= current_date 
-			and o.date_to >= current_date;
-		-- when book is ordered by another reader
-		if new.b_user != order_v.o_user then
-			raise exception 'This book is ordered by another reader.';
-		end if;
-		-- when book is ordered by current reader
-		raise exception 'This book is ordered by reader';
-	end if;
-
 	-- when book is borrowed and not ordered
 	if book_status_v.is_borrowed and not book_status_v.is_ordered then
 		select
-			(b.rental_date + st.rental_period)::date estimated_return_date,
-			b.b_user b_user
+			return_date,
+			b_user
 		into borrowing_v
-		from borrowings b 
-		inner join users u 
-		on b.b_user = u.user_id 
-		inner join subscriptions s 
-		on u.user_id = s.s_user 
-		inner join payment_plans pp 
-		on s.payment_plan = pp.payment_plan_id 
-		inner join subscription_types st 
-		on pp.subscription_type = st.subscription_type_id
+		from borrowings
 		where
-			b.return_date is null
-			and b.book = 4
-			and b.book = new.book;
+			rental_date <= current_date
+			and return_date >= current_date
+			and book = new.book;
 		-- when book is borrowed by another reader
-		if new.b_user != borrowing_v.b_user then
-			raise exception 'This book is borrowed by another reader to %', borrowing_v.estimated_return_date;
+		if new.b_user != borrowing_v.b_user or borrowing_v.b_user is null then
+			raise exception 'This book has been borrowed by another reader to %', borrowing_v.return_date;
 		end if;
 		-- when book is borrowed by current reader
-		raise exception 'The book has been borrowed by reader to %', borrowing_v.estimated_return_date;
+		raise exception 'The book has been borrowed by reader to %', borrowing_v.return_date;
 	end if;
-	
-	-- when the book is booked
-	if book_status_v.is_booked then
+
+	-- when the book is booked and not ordered
+	if book_status_v.is_booked and not book_status_v.is_ordered then
 		select b_user,
 			date_to
 		into booking_v
-		from bookings b 
+		from bookings
 		where
-			b.book = new.book
-			and b.date_from <= current_date 
-			and b.date_to >= current_date;
+			book = new.book
+			and is_realized = false;
 		-- when book is booked by another reader
 		if new.b_user != booking_v.b_user then
 			raise exception 'This book is booked by another reader to %.', booking_v.date_to;
@@ -79,9 +53,37 @@ begin
 		-- when book is booked by current reader
 		raise notice 'This book is booked by reader to %', booking_v.date_to;
 	end if;
+
+	-- when the book is ordered and not borrow or booked
+	if not book_status_v.is_borrowed and not book_status_v.is_booked and book_status_v.is_ordered then
+		select order_id
+		into first_order_v
+		from orders
+		where 
+			book = new.book
+			and is_realized = false
+		order by date_from
+		fetch first row only;
+	
+		select order_id,
+			o_user,
+			date_to
+		into order_v
+		from orders
+		where 
+			book = new.book
+			and order_id = first_order_v
+			and is_realized = false;
+		-- when book is ordered by another reader at the beginning of the queue
+		if new.b_user != order_v.o_user then
+			raise exception 'This book is ordered by another reader.';
+		end if;
+		-- when book is ordered by current reader at the beginning of the queue
+		raise notice 'Reader can borrow this book';
+	end if;
 	return new;
 end;
-$$
+$$;
 
 
 create or replace trigger before_borrowing_book
@@ -101,6 +103,8 @@ declare
 	rental_period_v interval;
 	book_status_v record;
 	booking_v int;
+	order_v int;
+	first_order_v int;
 begin
 	-- get a status of a book in the library
 	select is_borrowed,
@@ -136,34 +140,47 @@ begin
 	where
 		s.s_user = new.b_user;
 	
-	update borrowings b
+	update borrowings
 	set return_date = rental_date + rental_period_v
 	where
-		b.borrowing_id = new.borrowing_id;
+		borrowing_id = new.borrowing_id;
 
 	-- checking if the book was booked or ordered and then filling in the fields in the tables accordingly
 	if book_status_v.is_booked then
 		select booking_id
 		into booking_v
-		from bookings b 
+		from bookings
 		where 
 			book = new.book
-			and date_from < current_date
-			and date_to > current_date
-			and b_user = new.b_user;
+			and b_user = new.b_user
+			and is_realized = false;
 		
 		update borrowings 
 		set booking = booking_v
 		where
 			borrowing_id = new.borrowing_id;
 		
-		update bookings 
-		set date_to = current_date 
+		update bookings
+		set date_to = current_date,
+			is_realized = true
 		where booking_id = booking_v;
-	elsif book_status_v.is_ordered then
-		-- Not implemented yet
+	
+	-- checking if the book was is ordered and not borrowed or booked then filling in the fields in the tables accordingly
+	elsif not book_status_v.is_borrowed and not book_status_v.is_booked and book_status_v.is_ordered then
+		select order_id
+		into order_v
+		from orders
+		where
+			book = new.book
+			and o_user = new.b_user
+			and is_realized = false;
+	
+		update orders
+		set date_to = current_timestamp,
+			is_realized = true
+		where
+			order_id = order_v;
 	end if;
-
 	return new;
 end;
 $$;
