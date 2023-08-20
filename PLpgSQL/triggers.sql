@@ -18,8 +18,8 @@ begin
 	from books
 	where book_id = new.book;
 	
-	-- when book is borrowed and not ordered
-	if book_status_v.is_borrowed and not book_status_v.is_ordered then
+	-- when book is borrowed
+	if book_status_v.is_borrowed then
 		select
 			return_date,
 			b_user
@@ -37,8 +37,8 @@ begin
 		raise exception 'The book has been borrowed by reader to %', borrowing_v.return_date;
 	end if;
 
-	-- when the book is booked and not ordered
-	if book_status_v.is_booked and not book_status_v.is_ordered then
+	-- when the book is booked
+	if book_status_v.is_booked then
 		select b_user,
 			date_to
 		into booking_v
@@ -81,6 +81,7 @@ begin
 		-- when book is ordered by current reader at the beginning of the queue
 		raise notice 'Reader can borrow this book';
 	end if;
+
 	return new;
 end;
 $$;
