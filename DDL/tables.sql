@@ -133,7 +133,7 @@ create table books_book_subcategories (
 create table bookings (
 	booking_id int generated always as identity,
 	date_from date not null,
-	date_to date not null,
+	date_to date,
 	book int not null,
 	b_user int not null,
 	is_realized bool not null default false,
@@ -195,17 +195,3 @@ create table subscription_types (
 	rental_period interval not null,
 	primary key (subscription_type_id)
 );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
