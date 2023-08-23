@@ -171,6 +171,35 @@ end;
 $$;
 
 
+create or replace function get_order_availability()
+	returns trigger
+	language plpgsql
+as
+$$
+declare
+	book_status_v record;
+	borrowing_v record;
+	booking_v record;
+	first_order_v int;
+	order_v record;
+begin
+	-- get a status of a book in the library
+	select is_borrowed,
+		is_booked,
+		is_ordered
+	into book_status_v
+	from books
+	where book_id = new.book;
+	
+	-- check if the book is available for order
+	if not book_status_v.is_borrowed and not book_status_v.is_booked and not book_status_v.is_ordered then
+		raise exception 'You can booked this book or borrow directly from the library';
+	end if;
+	return new;
+end;
+$$;
+
+
 create or replace trigger before_borrowing_book
 	before insert 
 	on borrowings
@@ -183,6 +212,13 @@ create or replace trigger before_booking_book
 	on bookings
 	for each row 
 	execute procedure get_booking_availability();
+
+
+create or replace trigger before_ordering_book
+	before insert 
+	on orders
+	for each row 
+	execute procedure get_order_availability();
 
 
 create or replace function after_borrowing_book()
@@ -312,6 +348,30 @@ end;
 $$;
 
 
+create or replace function after_ordering_book()
+	returns trigger 
+	language plpgsql
+as
+$$
+declare 
+	book_id_v int;
+begin
+	-- get the booked book id
+	select book_id
+	into book_id_v
+	from books
+	where
+		book_id = new.book;
+	-- update book status fields
+	update books 
+	set	is_ordered = true
+	where
+		book_id = book_id_v;
+	return new;
+end;
+$$;
+
+
 create or replace trigger after_borrowing_book
 	after insert
 	on borrowings
@@ -324,3 +384,10 @@ create or replace trigger after_booking_book
 	on bookings
 	for each row 
 	execute procedure after_booking_book();
+
+
+create or replace trigger after_ordering_book
+	after insert
+	on orders
+	for each row 
+	execute procedure after_ordering_book();
