@@ -28,7 +28,8 @@ begin
 		where
 			rental_date <= current_date
 			and return_date >= current_date
-			and book = new.book;
+			and book = new.book
+			and borrowing_id = false;
 		-- when book is borrowed by another reader
 		if new.b_user != borrowing_v.b_user or borrowing_v.b_user is null then
 			raise exception 'This book has been borrowed by another reader to %', borrowing_v.return_date;

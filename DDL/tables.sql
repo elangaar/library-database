@@ -148,6 +148,7 @@ create table borrowings (
 	book int not null,
 	booking int,
 	b_order int,
+	is_realized bool not null default false,
 	primary key (borrowing_id)
 );
 
