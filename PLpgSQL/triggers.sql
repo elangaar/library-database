@@ -164,7 +164,7 @@ begin
 			raise exception 'This book is ordered by another reader.';
 		end if;
 		-- when book is ordered by current reader at the beginning of the queue
-		raise exception 'This book is ordered by reader.';
+		raise notice 'This book is ordered by reader.';
 	end if;
 	return new;
 end;
@@ -302,12 +302,33 @@ begin
 			book = new.book
 			and o_user = new.b_user
 			and is_realized = false;
+		
+		update borrowings
+		set b_order = order_v
+		where
+			borrowing_id = new.borrowing_id;
 	
 		update orders
 		set date_to = current_timestamp,
 			is_realized = true
 		where
 			order_id = order_v;
+		
+		select order_id
+		into order_v
+		from orders
+		where
+			book = new.book
+			and is_realized = false
+		order by date_from asc
+		fetch first row only;
+	
+		if found then
+			update books 
+			set is_ordered = true 
+			where book_id = new.book;
+		end if;
+		
 	end if;
 	return new;
 end;
